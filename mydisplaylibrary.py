@@ -4,12 +4,14 @@ from config import *
 
 lcd_initialized = False
 
+
 def lcd_toggle_enable():
     time.sleep(0.0005)
     GPIO.output(LCD_E, True)
     time.sleep(0.0005)
     GPIO.output(LCD_E, False)
     time.sleep(0.0005)
+
 
 def lcd_write(bits, mode):
 # High bits
@@ -48,6 +50,7 @@ def lcd_write(bits, mode):
     # Toggle 'Enable' pin
     lcd_toggle_enable()
 
+
 def lcd_init():
     lcd_write(0x33,LCD_CMD) # Initialize
     lcd_write(0x32,LCD_CMD) # Set to 4-bit mode
@@ -56,6 +59,7 @@ def lcd_init():
     lcd_write(0x28,LCD_CMD) # 2 line display
     lcd_write(0x01,LCD_CMD) # Clear display
     time.sleep(0.0005) # Delay to allow commands to process
+
 
 def lcd_text(message,line):
  # Send text to display
@@ -80,17 +84,3 @@ def initialize_lcd():
 # Initialize display
     lcd_initialized = True
     lcd_init()
-
-
-# def main():
- 
-
-
-# # Loop - send text and sleep 3 seconds between texts
-# # Change text to anything you wish, but must be 16 characters or less
-
-#     while True:
-
-#         temp = read_temp()
-#         temp_str = str(temp)
-#         lcd_text(temp_str,LCD_LINE_1)

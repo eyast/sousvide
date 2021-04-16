@@ -2,6 +2,7 @@ import RPi.GPIO as GPIO
 import time
 from config import *
 
+
 def buzz(duration, times):
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(BUZZER,GPIO.OUT)
