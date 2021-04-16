@@ -31,6 +31,7 @@ if __name__ == "__main__":
         
 
 # TODO
+# add to git
 # Learn how to use the Logger
 # Experiment reducing the cycle length to 1 second - better results?
 # Make it multi-threading
