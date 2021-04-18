@@ -1,8 +1,7 @@
-import time
-import os
-import logging
 from datetime import datetime, timedelta
-import numpy as np
+import os
+import time
+import logging
 import tinytuya
 from mynetworklibrary import get_local_ip, find_tuya
 from mydisplaylibrary import *
@@ -119,12 +118,17 @@ class Environment():
             time.sleep(self.phase_cycle_in_sec)
         else:
             time_start = time.time()
-            time_on = duration
-            time_off = self.possible_actions[-1] - time_on
-            self.tuya_on()
-            time.sleep(time_on)
-            self.tuya_off()
-            time.sleep(time_off)
+            time_end = time.time()
+            duration_on = duration
+            duration_off = self.possible_actions[-1] - duration_on
+            while (time_end - time_start) <= duration_on:
+                self.tuya_on()
+                time_end = time.time()
+            time_start = time.time()
+            time_end = time.time()
+            while (time_end - time_start) <= duration_off:
+                self.tuya_off()
+                time_end = time.time()
         self.temperature = self.get_temperature()
 
 

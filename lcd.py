@@ -31,7 +31,7 @@ if __name__ == "__main__":
         
 
 # TODO
-# add to git
+# use the property decorator to make the code better
 # Learn how to use the Logger
 # Experiment reducing the cycle length to 1 second - better results?
 # Make it multi-threading
@@ -59,3 +59,4 @@ if __name__ == "__main__":
 # Analyzer - draw a line that shows the peaks (except first peak)
 # Analyzer - histogram of temperatures
 # change the logic of turning switches on and off so that it is based on a SMA
+# add to git
