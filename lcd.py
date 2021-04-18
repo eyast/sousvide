@@ -10,8 +10,9 @@ from agentenvironment_pid import Environment, Agent
 def run():
     global myEnv
     myEnv = Environment(phase_cycle_in_sec=1)
-    myAgent = Agent(kP=1, kI=0.01, kD=100, target_temp=60, 
-                    target_duration=60, Environment=myEnv, label="test")
+    myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
+                    target_duration=60, Environment=myEnv, label="test",
+                    usequeue=True, qlength=10)
     while True:
         myAgent.take_step()
 
@@ -22,11 +23,11 @@ def exit_handler():
 
 
 if __name__ == "__main__":
-    atexit.register(exit_handler)
-    try:
-        run()        
-    except:
-        exit_handler()
+    #atexit.register(exit_handler)
+    #try:
+    run()        
+    # except:
+    #     exit_handler()
 
         
 

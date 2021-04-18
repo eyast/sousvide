@@ -9,7 +9,7 @@ def display(zoom=False):
     files = glob.glob("logs/*.csv")
     for file in files:
         #if "Cycles.1" in file and "Temp.65" in file:
-        if "Temp.60" in file:
+        if "test" in file:
             data = pd.read_csv(file)
             data.replace("False", "0", inplace=True)
             data.replace("True", "1", inplace=True)
