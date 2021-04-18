@@ -130,7 +130,7 @@ class Environment():
 
 class Agent():
     def __init__(self, kP, kI, kD, target_temp, target_duration, Environment, 
-                label, usequeue, qlength=0):
+                label):
         self._logger = logging.getLogger(type(self).__name__)
         self.Environment = Environment
         self.target_temp = target_temp
@@ -155,16 +155,6 @@ class Agent():
         self.reached_target_temp_at_timestamp = None
         self.done = False
         self.label = label
-        self.usequeue = usequeue
-        if self.usequeue:
-            self.inputq = []
-            self.qlength = qlength
-            self.decay = np.linspace(1, qlength, qlength, endpoint=False)
-            self.decay = self.decay ** 2
-            #self.decay = np.logspace(1, qlength, num=qlength, endpoint=False, 
-            #            base = 2)
-            self.decay = 2 / self.decay
-            self.inputq_np = None
 
     def update_error(self):
         current_error = self.target_temp - self.input
@@ -185,24 +175,10 @@ class Agent():
         return self.Ival
 
     def D(self):
-        if self.usequeue:
-            if len(self.inputq) == self.qlength:
-                #print("using queue")
-                # this code needs to be modified to allow sum products
-                self.inputq_np = np.array(self.inputq)
-                self.inputq_np = self.inputq_np[::-1]
-                self.inputq_np = self.inputq_np * self.decay
-                self.Dval = self.inputq_np[0]
-                for loc, x in enumerate(self.inputq_np):
-                    if loc != 0:
-                        self.Dval = self.Dval - x
-                self.Dval = self.Dval / 1000
-                return self.Dval        
+        if self.last_input is None:
+            self.Dval = 0
         else:
-            if self.last_input is None:
-                self.Dval = 0
-            else:
-                self.Dval = self.input - self.last_input
+            self.Dval = self.input - self.last_input
         return self.Dval
 
     def ReturnPID(self):
@@ -230,13 +206,6 @@ class Agent():
         self._logger.debug(f"D: {outcome_D}")
         self._logger.debug(f"output: {self.last_outcome}")
         return outcome
-
-    def UpdateQ(self):
-        assert len(self.inputq) - 1 <= self.qlength
-        self.inputq.append(self.input)
-        if len(self.inputq) - 1 == self.qlength:
-            self.inputq.pop(0)
-        #print(self.inputq)
 
     def take_step(self):
         assert not self.Environment.is_over

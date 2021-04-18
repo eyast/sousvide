@@ -11,8 +11,7 @@ def run():
     global myEnv
     myEnv = Environment(phase_cycle_in_sec=1)
     myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
-                    target_duration=60, Environment=myEnv, label="test",
-                    usequeue=True, qlength=10)
+                    target_duration=60, Environment=myEnv, label="test")
     while True:
         myAgent.take_step()
 
