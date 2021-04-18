@@ -48,6 +48,7 @@ class Environment():
         my_tuya = tinytuya.OutletDevice(self.TUYA_GWID, self.SousVide_ip, 
                                         self.TUYA_KEYID)
         my_tuya.set_version(3.3)
+        my_tuya.set_socketPersistent(True)
         return my_tuya
 
     def reset_tuya_switch(self):
@@ -93,14 +94,16 @@ class Environment():
 
     def tuya_off(self):
         if self.switch_status:
-            self.tuya_properties.set_status(False, 1)
+            # self.tuya_properties.set_status(False, 1)
+            self.tuya_properties.turn_off(switch=1)
             self.switch_status = False
         else:
             pass
 
     def tuya_on(self):
         if not self.switch_status:
-            self.tuya_properties.set_status(True, 1)
+            #self.tuya_properties.set_status(True, 1)
+            self.tuya_properties.turn_on(switch=1)
             self.switch_status = True
         else:
             pass
@@ -214,8 +217,6 @@ class Agent():
     def take_step(self):
         assert not self.Environment.is_over
         self.input = self.Environment.get_temperature()
-        if self.usequeue:
-            self.UpdateQ()
         movement = self.ReturnPID()
         self.log_to_file()
         self.Environment.apply_step(movement)
@@ -234,6 +235,7 @@ class Agent():
                     self.done = True
                     buzz(1, 6)
                     print(f"finished at: {datetime.now()}")
+                    self.Environment.shutdown()
         
 
     def log_to_file(self):

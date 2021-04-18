@@ -9,10 +9,10 @@ from agentenvironment_pid import Environment, Agent
 
 def run():
     global myEnv
-    myEnv = Environment(phase_cycle_in_sec=1)
+    myEnv = Environment(phase_cycle_in_sec=0.5)
     myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
-                    target_duration=60, Environment=myEnv, label="test")
-    while True:
+                    target_duration=60, Environment=myEnv, label="accurac")
+    while not myEnv.is_over:
         myAgent.take_step()
 
 
