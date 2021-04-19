@@ -2,47 +2,38 @@ from datetime import datetime, timedelta
 import os
 import time
 import logging
+import multiprocessing
+import sys
 import tinytuya
 from mynetworklibrary import get_local_ip, find_tuya
 from mydisplaylibrary import *
-from mytemperaturelibrary import *
 from mybuzzlibrary import *
+from w1thermsensor import W1ThermSensor, Sensor
 from config import *
 
 
-class Environment():
+class Environment(multiprocessing.Process):
     def __init__(self, phase_cycle_in_sec):
+        multiprocessing.Process.__init__(self, group=None, 
+            name="Environment_Process")
         self._logger = logging.getLogger(type(self).__name__)
+        os.system('modprobe w1-gpio')
+        os.system('modprobe w1-therm')
         self.stepcount = 0
         self.phase_cycle_in_sec = phase_cycle_in_sec
         self.is_over = False
-        self.Raspberry_ip = self.get_local_ip()
-        self.SousVide_ip = self.get_sous_vide_ip()
+        self.SousVide_ip = SousVide_ip
         self.TUYA_GWID = TUYA_GWID
         self.TUYA_KEYID = TUYA_KEYID
         self.tuya_properties = self.generate_tuya_properties()
         self.switch_status = self.get_tuya_status()
         self.reset_tuya_switch()
         assert not self.switch_status
-        self.temperature_sensor_works = self.check_temperature_sensor_works()
-        self.temperature = self.get_temperature()
         self.time_start = self.get_local_time()
-        self.verbose_log_file_path = self.generate_file_name()
-        self.possible_actions = self.get_actions()
-
-    def get_local_ip(self):
-        local_ip = get_local_ip()
-        print(local_ip)
-        return local_ip
-
-    def get_sous_vide_ip(self):
-        tuya_ip = find_tuya()
-        if tuya_ip == "":
-            self.emergency_off = True
-            self.shutdown()
-        assert tuya_ip != ""
-        print(tuya_ip)
-        return tuya_ip
+        self.possible_actions = [0, self.phase_cycle_in_sec]
+        self.sensor = W1ThermSensor(Sensor.DS18B20, SENSORADDRESS)
+        self.sensor.set_resolution(resolution=11, persist=False)
+        self.temperature = self.get_temperature()
 
     def generate_tuya_properties(self):
         my_tuya = tinytuya.OutletDevice(self.TUYA_GWID, self.SousVide_ip, 
@@ -59,20 +50,10 @@ class Environment():
         data = self.tuya_properties.status()
         data = data["dps"]["1"]
         return data
-
-    def check_temperature_sensor_works(self):
-        tempfile_exists = file_exists()
-        if not tempfile_exists:
-            self.emergency_off = True
-            self.shutdown()
-        assert tempfile_exists
-        print("Temp sensor exists")
-        return tempfile_exists
         
     def get_temperature(self):
-        temp = read_temp()
-        self.temperature = temp
-        return temp
+        self.temperature = self.sensor.get_temperature()
+        return self.temperature
 
     def get_local_time(self):
         now = datetime.now() +  timedelta(hours=9)
@@ -81,16 +62,7 @@ class Environment():
 
     def shutdown(self):
         self.is_over = True
-        self.tuya_off()
-        
-    def generate_file_name(self):
-        run_name = str(self.time_start)
-        run_name = run_name + ".csv"
-        return run_name
-
-    def get_actions(self):
-        possibilities = [0, self.phase_cycle_in_sec]
-        return possibilities
+        self.tuya_off()        
 
     def tuya_off(self):
         if self.switch_status:
@@ -115,29 +87,30 @@ class Environment():
         self.stepcount += 1
         if duration == self.possible_actions[0]:
             self.tuya_off()
-            time.sleep(self.phase_cycle_in_sec)
+            time.sleep(duration)
+            print("OFF: time sleep for {}".format(duration))
         elif duration == self.possible_actions[-1]:
             self.tuya_on()
-            time.sleep(self.phase_cycle_in_sec)
+            time.sleep(duration)
+            print("ON: time sleep for {}".format(duration))
         else:
-            time_start = time.time()
-            time_end = time.time()
             duration_on = duration
             duration_off = self.possible_actions[-1] - duration_on
-            while (time_end - time_start) <= duration_on:
-                self.tuya_on()
-                time_end = time.time()
-            time_start = time.time()
-            time_end = time.time()
-            while (time_end - time_start) <= duration_off:
-                self.tuya_off()
-                time_end = time.time()
+            print("meow: time sleep for {}".format(duration_on))         
+            self.tuya_on()
+            time.sleep(duration_on)
+            self.tuya_off()
+            time.sleep(duration_off)
+
+    def run(self):
         self.temperature = self.get_temperature()
+        time.sleep(self.phase_cycle_in_sec)
 
-
-class Agent():
+class Agent(multiprocessing.Process):
     def __init__(self, kP, kI, kD, target_temp, target_duration, Environment, 
-                label):
+                label, length):
+        multiprocessing.Process.__init__(self, group=None,
+            name="Agent_Process")
         self._logger = logging.getLogger(type(self).__name__)
         self.Environment = Environment
         self.target_temp = target_temp
@@ -162,6 +135,7 @@ class Agent():
         self.reached_target_temp_at_timestamp = None
         self.done = False
         self.label = label
+        self.length = length
 
     def update_error(self):
         current_error = self.target_temp - self.input
@@ -214,9 +188,9 @@ class Agent():
         self._logger.debug(f"output: {self.last_outcome}")
         return outcome
 
-    def take_step(self):
+    def run(self):
         assert not self.Environment.is_over
-        self.input = self.Environment.get_temperature()
+        self.input = self.Environment.temperature
         movement = self.ReturnPID()
         self.log_to_file()
         self.Environment.apply_step(movement)
@@ -236,16 +210,16 @@ class Agent():
                     buzz(1, 6)
                     print(f"finished at: {datetime.now()}")
                     self.Environment.shutdown()
+        if self.Environment.stepcount >= self.length:
+            sys.exit()
         
-
     def log_to_file(self):
         prefix = self.label + \
                 f"_KP.{self.kP}_KI.{self.kI}_KD.{self.kD}" + \
                 f"_Cycles.{self.Environment.phase_cycle_in_sec}" + \
                 f"_TargetTemp.{self.target_temp}_"
-        filename = self.Environment.verbose_log_file_path
         dir = "logs/"
-        logfile = dir + prefix + filename
+        logfile = dir + prefix 
         headerdata = ["stepcount", "actiontime", "target_temp" , \
                     "current_temp" , "Pval", "Ival", "Dval", "outcome"]
         logdata = [self.Environment.stepcount, \
@@ -255,16 +229,16 @@ class Agent():
         logdata = [str(x) for x in logdata]
         headerdata = ",".join(headerdata)
         logdata = ",".join(logdata)
-        if os.path.exists(logfile):
-            f = open(logfile, "a")
-            f.write(logdata)
-            f.write("\n")
-            f.close()
-        else:
-            f = open(logfile, "w")
-            f.write(headerdata)
-            f.write("\n")
-            f.write(logdata)
-            f.write("\n")
-            f.close()
-        print(logdata.split(","))
+        # if os.path.exists(logfile):
+        #     f = open(logfile, "a")
+        #     f.write(logdata)
+        #     f.write("\n")
+        #     f.close()
+        # else:
+        #     f = open(logfile, "w")
+        #     f.write(headerdata)
+        #     f.write("\n")
+        #     f.write(logdata)
+        #     f.write("\n")
+        #     f.close()
+        # print(logdata.split(","))
