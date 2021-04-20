@@ -1,5 +1,6 @@
 def display(zoom=False):
     import pandas as pd
+    import numpy as np
     import matplotlib.pyplot as plt 
     import glob
     #%matplotlib inline
@@ -7,8 +8,9 @@ def display(zoom=False):
     files = glob.glob("logs/*")
     for file in files:
         #if "Cycles.1" in file and "Temp.65" in file:
-        if "tuning_with_P_only_0.4" in file:
+        if "tuning_with_P_only_0.4v2" in file:
             data = pd.read_csv(file)
+            print(np.max(data['current_temp']))
             data.replace("False", "0", inplace=True)
             data.replace("True", "1", inplace=True)
             data.set_index("stepcount", inplace=True)
@@ -36,3 +38,4 @@ def display(zoom=False):
             ax2.set_ylabel("IVal")
             plt.legend(bbox_to_anchor=(1.1,1.3))
             plt.show()
+            

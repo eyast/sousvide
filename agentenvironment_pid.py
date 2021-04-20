@@ -14,6 +14,7 @@ class TemperatureProvider(multiprocessing.Process):
         multiprocessing.Process.__init__(self, group=None, 
             name="Temperature Provider")
         self._logger = logging.getLogger(type(self).__name__)
+        self.safety_max_temperature = 80
         os.system('modprobe w1-gpio')
         os.system('modprobe w1-therm')
         self.phase_cycle_in_sec = phase_cycle_in_sec
@@ -24,8 +25,13 @@ class TemperatureProvider(multiprocessing.Process):
         self.is_over = False
         self.last_timestamp = None
 
+    def shutdown(self):
+        pass
+
     def get_temperature(self):
         self.temperature = self.sensor.get_temperature()
+        if self.temperature >= self.safety_max_temperature:
+            self.shutdown()
         self._logger.debug(f"Value - self.temperature: {self.temperature}")
         return self.temperature
 
