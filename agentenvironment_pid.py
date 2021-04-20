@@ -5,9 +5,6 @@ import logging
 import multiprocessing
 import RPi.GPIO as GPIO
 import tinytuya
-# from mynetworklibrary import get_local_ip, find_tuya
-# from mydisplaylibrary import *
-# from mybuzzlibrary import *
 from w1thermsensor import W1ThermSensor, Sensor
 from config import *
 
