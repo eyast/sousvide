@@ -36,14 +36,14 @@ class TemperatureProvider(multiprocessing.Process):
             time_now = time.time()
             if self.last_timestamp is not None:
                 time_elapsed = time_now - self.last_timestamp
-                self._logger.debug(f"Time elapsed since last temperature read: \
-                    {self.temperature}")
             else:
                 time_elapsed = 10
                 self.last_timestamp = time_now
             if time_elapsed < self.phase_cycle_in_sec:
                 pass
             else:
+                self._logger.debug(f"Time elapsed since last temperature read: \
+                    {time_elapsed}")
                 self.temperature = self.get_temperature()
                 self.TemperatureQueue.put(self.temperature)
                 self.last_timestamp = time_now
@@ -203,22 +203,17 @@ class Agent(multiprocessing.Process):
 
     def run(self):
         while not self.done:
-            self._logger.debug("Agent getting Temperature")
             self.input = self.TemperatureQueue.get()
-            self._logger.debug("Agent Requesting movement")
-            movement = self.ReturnPID()
-            self._logger.debug("Agent putting movement on Queue")  
+            movement = self.ReturnPID() 
             self.MovementQueue.put(movement)
-            self._logger.debug("Agent writing to file: start")
             self.log_to_file()
-            self._logger.debug("Agent writing to file: done")
             self.last_input = self.input
             self.stepcount += 1
             if not self.reached_target_temp:
                 if self.input >= self.target_temp:
                     self.reached_target_temp = True
                     buzz(0.5, 4)
-                    print(f"Buzzed at: {datetime.now()}")
+                    self._logger.debug(f"Buzzed at: {datetime.now()}")
                     self.reached_target_temp_at_timestamp = datetime.now()
             if self.reached_target_temp:
                 now = datetime.now()
@@ -227,7 +222,7 @@ class Agent(multiprocessing.Process):
                     if not self.done:
                         self.done = True
                         buzz(1, 6)
-                        print(f"finished at: {datetime.now()}")
+                        self._logger.debug(f"finished at: {datetime.now()}")
         else:
             time.sleep(WAIT_PERIOD)
 
