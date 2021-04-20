@@ -3,10 +3,9 @@ import os
 import time
 import logging
 import multiprocessing
-import sys
 import tinytuya
-from mynetworklibrary import get_local_ip, find_tuya
-from mydisplaylibrary import *
+# from mynetworklibrary import get_local_ip, find_tuya
+# from mydisplaylibrary import *
 from mybuzzlibrary import *
 from w1thermsensor import W1ThermSensor, Sensor
 from config import *
@@ -29,6 +28,7 @@ class TemperatureProvider(multiprocessing.Process):
 
     def get_temperature(self):
         self.temperature = self.sensor.get_temperature()
+        self._logger.debug(f"Value - self.temperature: {self.temperature}")
         return self.temperature
 
     def run(self):
@@ -36,6 +36,8 @@ class TemperatureProvider(multiprocessing.Process):
             time_now = time.time()
             if self.last_timestamp is not None:
                 time_elapsed = time_now - self.last_timestamp
+                self._logger.debug(f"Time elapsed since last temperature read: \
+                    {self.temperature}")
             else:
                 time_elapsed = 10
                 self.last_timestamp = time_now
@@ -111,6 +113,7 @@ class RiceCookerController(multiprocessing.Process):
         while not self.is_over:
             while not self.MovementQueue.empty():
                 movement = self.MovementQueue.get()
+                self._logger.debug(f"Value - movement: {movement}")
                 self.apply_step(movement)
 
 
@@ -200,10 +203,15 @@ class Agent(multiprocessing.Process):
 
     def run(self):
         while not self.done:
+            self._logger.debug("Agent getting Temperature")
             self.input = self.TemperatureQueue.get()
-            movement = self.ReturnPID()   
+            self._logger.debug("Agent Requesting movement")
+            movement = self.ReturnPID()
+            self._logger.debug("Agent putting movement on Queue")  
             self.MovementQueue.put(movement)
+            self._logger.debug("Agent writing to file: start")
             self.log_to_file()
+            self._logger.debug("Agent writing to file: done")
             self.last_input = self.input
             self.stepcount += 1
             if not self.reached_target_temp:
