@@ -1,34 +1,30 @@
-
-import atexit
+import multiprocessing as mp
+import logging
 from agentenvironment_pid import Environment, Agent
+from config import PHASE_LENGTH
+
 
 
 # https://www.seriouseats.com/2013/10/sous-vide-101-all-about-eggs.html
 # https://www.wescottdesign.com/articles/pid/pidWithoutAPhd.pdf
 # http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/
 
-def run():
-    global myEnv
-    myEnv = Environment(phase_cycle_in_sec=0.5)
-    myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
-                    target_duration=60, Environment=myEnv, label="accurac")
-    while not myEnv.is_over:
-        myAgent.take_step()
-
-
-def exit_handler():
-    myEnv.shutdown()
-    print("end")
-
-
 if __name__ == "__main__":
-    #atexit.register(exit_handler)
-    #try:
-    run()        
-    # except:
-    #     exit_handler()
-
-        
+    mp.log_to_stderr(logging.DEBUG)
+    TemperatureQueue = mp.Queue()
+    StatusQueue = mp.Queue()
+    MovementQueue = mp.Queue()
+    myEnv = Environment(phase_cycle_in_sec=PHASE_LENGTH, 
+                TemperatureQueue=TemperatureQueue,
+                StatusQueue=StatusQueue, MovementQueue=MovementQueue)
+    myEnv.start()
+    myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
+                    target_duration=60, TemperatureQueue=TemperatureQueue,
+                    StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
+                    label="works", length=5)    
+    myAgent.start()
+    myEnv.join()
+    myAgent.join()
 
 # TODO
 # use the property decorator to make the code better

@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/home/pi/miniconda3/envs/sousvide/bin/python"
+    "python.pythonPath": "/home/pi/miniconda3/envs/sousvide/bin/python",
+    "python.analysis.extraPaths": ["/home/pi/miniconda3/envs/sousvide/bin/w1thermsensor"]
 }
