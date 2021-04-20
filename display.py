@@ -7,7 +7,7 @@ def display(zoom=False):
     files = glob.glob("logs/*")
     for file in files:
         #if "Cycles.1" in file and "Temp.65" in file:
-        if "3q_timelogic" in file:
+        if "tuning_with_P_only_0" in file:
             data = pd.read_csv(file)
             data.replace("False", "0", inplace=True)
             data.replace("True", "1", inplace=True)
