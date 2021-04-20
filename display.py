@@ -7,7 +7,7 @@ def display(zoom=False):
     files = glob.glob("logs/*")
     for file in files:
         #if "Cycles.1" in file and "Temp.65" in file:
-        if "works2" in file:
+        if "works20res" in file:
             data = pd.read_csv(file)
             data.replace("False", "0", inplace=True)
             data.replace("True", "1", inplace=True)

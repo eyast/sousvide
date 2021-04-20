@@ -22,10 +22,10 @@ if __name__ == "__main__":
         myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
                         target_duration=60, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="works2", length=5)    
+                        label="works20res11_fix", length=5)    
         myAgent.start()
-        myEnv.join()
-        myAgent.join()
+        # myEnv.join()
+        # myAgent.join()
     except:
         logging.error("Exception occured", exc_info=True)
 

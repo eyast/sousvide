@@ -30,7 +30,7 @@ class Environment(multiprocessing.Process):
         self.reset_tuya_switch()
         assert not self.switch_status
         self.sensor = W1ThermSensor(Sensor.DS18B20, SENSORADDRESS)
-        self.sensor.set_resolution(resolution=12, persist=False)
+        self.sensor.set_resolution(resolution=11, persist=False)
         self.temperature = self.get_temperature()
         self.TemperatureQueue = TemperatureQueue
         self.StatusQueue = StatusQueue
@@ -40,7 +40,7 @@ class Environment(multiprocessing.Process):
         my_tuya = tinytuya.OutletDevice(self.TUYA_GWID, self.SousVide_ip, 
                                         self.TUYA_KEYID)
         my_tuya.set_version(3.3)
-        my_tuya.set_socketPersistent(True)
+        #my_tuya.set_socketPersistent(True)
         return my_tuya
 
     def reset_tuya_switch(self):
@@ -101,6 +101,7 @@ class Environment(multiprocessing.Process):
             while not self.MovementQueue.empty():
                 movement = self.MovementQueue.get()
                 self.apply_step(movement)
+
 
 class Agent(multiprocessing.Process):
     def __init__(self, kP, kI, kD, target_temp, target_duration, 
