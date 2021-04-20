@@ -23,8 +23,8 @@ if __name__ == "__main__":
         myTemperatureProvider = TemperatureProvider(phase_cycle_in_sec=PHASE_LENGTH,
                         TemperatureQueue=TemperatureQueue)
         myTemperatureProvider.start()
-        myAgent = Agent(kP=0.5, kI=0, kD=0, target_temp=65, 
-                        target_duration=60, TemperatureQueue=TemperatureQueue,
+        myAgent = Agent(kP=0.4, kI=0, kD=0, target_temp=65, 
+                        target_duration=180, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
                         label="tuning_with_P_only_0.5")    
         myAgent.start()

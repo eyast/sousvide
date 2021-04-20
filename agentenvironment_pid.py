@@ -79,14 +79,16 @@ class RiceCookerController(multiprocessing.Process):
 
     def tuya_off(self):
         if self.switch_status:
-            self.tuya_properties.set_status(False, 1)
+            tuya_return = self.tuya_properties.set_status(False, 1)
+            self._logger.debug(f"Tuya off returns: {tuya_return}")
             self.switch_status = False
         else:
             pass
 
     def tuya_on(self):
         if not self.switch_status:
-            self.tuya_properties.set_status(True, 1)
+            tuya_return = self.tuya_properties.set_status(True, 1)
+            self._logger.debug(f"Tuya on returns: {tuya_return}")
             self.switch_status = True
         else:
             pass
@@ -116,6 +118,30 @@ class RiceCookerController(multiprocessing.Process):
                 self._logger.debug(f"Value - movement: {movement}")
                 self.apply_step(movement)
 
+
+class Buzzer(multiprocessing.Process):
+    def __init__(self, duration, time):
+        multiprocessing.Process.__init__(self, group=None, name="Buzzer")
+        self._duration = duration
+        self._time = time
+        self._hasBuzzed = False
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(BUZZER, GPIO.OUT)
+
+    def buzz(self):
+        if self._time > 0:
+            for _ in range(self._time):
+                GPIO.output(BUZZER, GPIO.HIGH)
+                time.sleep(self._duration)
+                GPIO.output(BUZZER, GPIO.LOW)
+                time.sleep(self._duration)
+        else:
+            GPIO.output(BUZZER, GPIO.HIGH)
+        self._hasBuzzed = True
+
+    def run(self):
+        while not self._hasBuzzed:
+            self.buzz()
 
 class Agent(multiprocessing.Process):
     def __init__(self, kP, kI, kD, target_temp, target_duration, 
@@ -148,6 +174,7 @@ class Agent(multiprocessing.Process):
         # time.sleep(2)
         self.input = self.TemperatureQueue.get()
         self.movement = 0
+        self.buzzer = Buzzer(duration=0.5, time=4)
 
     def update_error(self):
         current_error = self.target_temp - self.input
@@ -212,7 +239,7 @@ class Agent(multiprocessing.Process):
             if not self.reached_target_temp:
                 if self.input >= self.target_temp:
                     self.reached_target_temp = True
-                    buzz(0.5, 4)
+                    self.buzzer.start()
                     self._logger.debug(f"Buzzed at: {datetime.now()}")
                     self.reached_target_temp_at_timestamp = datetime.now()
             if self.reached_target_temp:
