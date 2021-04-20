@@ -33,9 +33,19 @@ class TemperatureProvider(multiprocessing.Process):
 
     def run(self):
         while not self.is_over:
-            self.temperature = self.get_temperature()
-            self.TemperatureQueue.put(self.temperature)
-            time.sleep(self.phase_cycle_in_sec)
+            time_now = time.time()
+            if self.last_timestamp is not None:
+                time_elapsed = time_now - self.last_timestamp
+            else:
+                time_elapsed = 10
+                self.last_timestamp = time_now
+            if time_elapsed < self.phase_cycle_in_sec:
+                pass
+            else:
+                self.temperature = self.get_temperature()
+                self.TemperatureQueue.put(self.temperature)
+                self.last_timestamp = time_now
+            #time.sleep(self.phase_cycle_in_sec)
 
 class RiceCookerController(multiprocessing.Process):
     def __init__(self, phase_cycle_in_sec, StatusQueue, MovementQueue):
@@ -111,8 +121,7 @@ class RiceCookerController(multiprocessing.Process):
 
 class Agent(multiprocessing.Process):
     def __init__(self, kP, kI, kD, target_temp, target_duration, 
-                TemperatureQueue, StatusQueue, MovementQueue, label, 
-                length):
+                TemperatureQueue, StatusQueue, MovementQueue, label):
         multiprocessing.Process.__init__(self, group=None,
             name="Agent_Process")
         self._logger = logging.getLogger(type(self).__name__)
@@ -135,7 +144,6 @@ class Agent(multiprocessing.Process):
         self.reached_target_temp_at_timestamp = None
         self.done = False
         self.label = label
-        self.length = length
         self.TemperatureQueue = TemperatureQueue
         self.StatusQueue = StatusQueue
         self.MovementQueue = MovementQueue
@@ -223,10 +231,6 @@ class Agent(multiprocessing.Process):
         else:
             time.sleep(WAIT_PERIOD)
             print("Queue empty, waiting")
-            # if self.length < 0:
-            #     pass
-            # elif self.Environment.stepcount >= self.length:
-            #     sys.exit()
 
     def get_local_time(self):
         now = datetime.now() +  timedelta(hours=9)

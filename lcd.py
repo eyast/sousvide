@@ -24,7 +24,7 @@ if __name__ == "__main__":
         myAgent = Agent(kP=1, kI=0.01, kD=100, target_temp=65, 
                         target_duration=60, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="3q", length=5)    
+                        label="3q_timelogic")    
         myAgent.start()
         myRiceCooker.join()
         myTemperatureProvider.join()
