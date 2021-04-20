@@ -21,7 +21,7 @@ class TemperatureProvider(multiprocessing.Process):
         os.system('modprobe w1-therm')
         self.phase_cycle_in_sec = phase_cycle_in_sec
         self.sensor = W1ThermSensor(Sensor.DS18B20, SENSORADDRESS)
-        self.sensor.set_resolution(resolution=11, persist=False)
+        self.sensor.set_resolution(resolution=12, persist=False)
         self.temperature = self.get_temperature()
         self.TemperatureQueue = TemperatureQueue
         self.is_over = False
@@ -45,7 +45,7 @@ class TemperatureProvider(multiprocessing.Process):
                 self.temperature = self.get_temperature()
                 self.TemperatureQueue.put(self.temperature)
                 self.last_timestamp = time_now
-            #time.sleep(self.phase_cycle_in_sec)
+
 
 class RiceCookerController(multiprocessing.Process):
     def __init__(self, phase_cycle_in_sec, StatusQueue, MovementQueue):
@@ -67,7 +67,6 @@ class RiceCookerController(multiprocessing.Process):
         my_tuya = tinytuya.OutletDevice(self.TUYA_GWID, self.SousVide_ip, 
                                         self.TUYA_KEYID)
         my_tuya.set_version(3.3)
-        #my_tuya.set_socketPersistent(True)
         return my_tuya
 
     def get_tuya_status(self):
@@ -75,10 +74,6 @@ class RiceCookerController(multiprocessing.Process):
         data = self.tuya_properties.status()
         data = data["dps"]["1"]
         return data
-
-    def shutdown(self):
-        self.is_over = True
-        self.tuya_off()        
 
     def tuya_off(self):
         if self.switch_status:
@@ -204,9 +199,6 @@ class Agent(multiprocessing.Process):
         return outcome
 
     def run(self):
-        # Add a while loop to make sure it does this
-        # as long as there is no "empty" message in the Queue
-        
         while not self.done:
             self.input = self.TemperatureQueue.get()
             movement = self.ReturnPID()   
@@ -230,7 +222,6 @@ class Agent(multiprocessing.Process):
                         print(f"finished at: {datetime.now()}")
         else:
             time.sleep(WAIT_PERIOD)
-            print("Queue empty, waiting")
 
     def get_local_time(self):
         now = datetime.now() +  timedelta(hours=9)
@@ -267,4 +258,3 @@ class Agent(multiprocessing.Process):
             f.write(logdata)
             f.write("\n")
             f.close()
-        # print(logdata.split(","))
