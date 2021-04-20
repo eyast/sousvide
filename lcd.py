@@ -11,8 +11,8 @@ from config import PHASE_LENGTH
 
 if __name__ == "__main__":
     try:
-        # logging.basicConfig(format="%(asctime)s %(name)s \
-        #     %(levelname)s %(message)s", level = logging.DEBUG)
+        logging.basicConfig(format="%(asctime)s %(name)s \
+            %(levelname)s %(message)s", level = logging.DEBUG)
         mp.log_to_stderr(logging.DEBUG)
         TemperatureQueue = mp.Queue()
         StatusQueue = mp.Queue()
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         myAgent = Agent(kP=0.4, kI=0, kD=0, target_temp=65, 
                         target_duration=180, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="tuning_with_P_only_0.5")    
+                        label="tuning_with_P_only_0.4")    
         myAgent.start()
         myRiceCooker.join()
         myTemperatureProvider.join()
@@ -35,6 +35,7 @@ if __name__ == "__main__":
         logging.error("Exception occured", exc_info=True)
 
 # TODO
+# Develop the shutdown function in the Agent
 # use the property decorator to make the code better
 # Learn how to use the Logger
 # Experiment reducing the cycle length to 1 second - better results?

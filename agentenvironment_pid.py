@@ -3,10 +3,11 @@ import os
 import time
 import logging
 import multiprocessing
+import RPi.GPIO as GPIO
 import tinytuya
 # from mynetworklibrary import get_local_ip, find_tuya
 # from mydisplaylibrary import *
-from mybuzzlibrary import *
+# from mybuzzlibrary import *
 from w1thermsensor import W1ThermSensor, Sensor
 from config import *
 
@@ -174,7 +175,8 @@ class Agent(multiprocessing.Process):
         # time.sleep(2)
         self.input = self.TemperatureQueue.get()
         self.movement = 0
-        self.buzzer = Buzzer(duration=0.5, time=4)
+        self.buzzer_reached_temp = Buzzer(duration=0.5, time=4)
+        self.buzzer_time_out = Buzzer(duration=1, time=6)
 
     def update_error(self):
         current_error = self.target_temp - self.input
@@ -228,6 +230,9 @@ class Agent(multiprocessing.Process):
         self._logger.debug(f"output: {self.last_outcome}")
         return outcome
 
+    def shutdown(self):
+        pass
+
     def run(self):
         while not self.done:
             self.input = self.TemperatureQueue.get()
@@ -239,7 +244,7 @@ class Agent(multiprocessing.Process):
             if not self.reached_target_temp:
                 if self.input >= self.target_temp:
                     self.reached_target_temp = True
-                    self.buzzer.start()
+                    self.buzzer_reached_temp.start()
                     self._logger.debug(f"Buzzed at: {datetime.now()}")
                     self.reached_target_temp_at_timestamp = datetime.now()
             if self.reached_target_temp:
@@ -247,8 +252,8 @@ class Agent(multiprocessing.Process):
                 elapsed = (now - self.reached_target_temp_at_timestamp).seconds
                 if elapsed > self.target_duration * 60:
                     if not self.done:
-                        self.done = True
-                        buzz(1, 6)
+                        self.shutdown()
+                        self.buzzer_time_out.start()
                         self._logger.debug(f"finished at: {datetime.now()}")
         else:
             time.sleep(WAIT_PERIOD)
