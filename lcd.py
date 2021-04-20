@@ -10,21 +10,24 @@ from config import PHASE_LENGTH
 # http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/
 
 if __name__ == "__main__":
-    mp.log_to_stderr(logging.DEBUG)
-    TemperatureQueue = mp.Queue()
-    StatusQueue = mp.Queue()
-    MovementQueue = mp.Queue()
-    myEnv = Environment(phase_cycle_in_sec=PHASE_LENGTH, 
-                TemperatureQueue=TemperatureQueue,
-                StatusQueue=StatusQueue, MovementQueue=MovementQueue)
-    myEnv.start()
-    myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
-                    target_duration=60, TemperatureQueue=TemperatureQueue,
-                    StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                    label="works", length=5)    
-    myAgent.start()
-    myEnv.join()
-    myAgent.join()
+    try:
+        mp.log_to_stderr(logging.DEBUG)
+        TemperatureQueue = mp.Queue()
+        StatusQueue = mp.Queue()
+        MovementQueue = mp.Queue()
+        myEnv = Environment(phase_cycle_in_sec=PHASE_LENGTH, 
+                    TemperatureQueue=TemperatureQueue,
+                    StatusQueue=StatusQueue, MovementQueue=MovementQueue)
+        myEnv.start()
+        myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
+                        target_duration=60, TemperatureQueue=TemperatureQueue,
+                        StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
+                        label="works2", length=5)    
+        myAgent.start()
+        myEnv.join()
+        myAgent.join()
+    except:
+        logging.error("Exception occured", exc_info=True)
 
 # TODO
 # use the property decorator to make the code better

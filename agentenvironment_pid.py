@@ -82,7 +82,7 @@ class Environment(multiprocessing.Process):
         assert not self.is_over
         if duration == 0:
             self.tuya_off()
-            time.sleep(duration)
+            time.sleep(self.phase_cycle_in_sec)
         elif duration == self.phase_cycle_in_sec:
             self.tuya_on()
             time.sleep(duration)
@@ -109,7 +109,7 @@ class Agent(multiprocessing.Process):
         multiprocessing.Process.__init__(self, group=None,
             name="Agent_Process")
         self._logger = logging.getLogger(type(self).__name__)
-        time.sleep(1)
+        # time.sleep(1)
         self.stepcount = 0
         self.target_temp = target_temp
         self.target_duration = target_duration
@@ -132,7 +132,7 @@ class Agent(multiprocessing.Process):
         self.TemperatureQueue = TemperatureQueue
         self.StatusQueue = StatusQueue
         self.MovementQueue = MovementQueue
-        time.sleep(2)
+        # time.sleep(2)
         self.input = self.TemperatureQueue.get()
         self.movement = 0
 
@@ -176,7 +176,7 @@ class Agent(multiprocessing.Process):
             outcome_D = 0
         outcome = outcome_P + outcome_I + outcome_D
         self.movement = outcome
-        outcome = round(outcome, 3)
+        outcome = round(outcome, 1)
         if outcome >= PHASE_LENGTH:
             outcome = PHASE_LENGTH
         if outcome <= 0:
