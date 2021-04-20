@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import logging
-from agentenvironment_pid import Environment, Agent
+from agentenvironment_pid import RiceCookerController, Agent, TemperatureProvider
 from config import PHASE_LENGTH
 
 
@@ -15,17 +15,20 @@ if __name__ == "__main__":
         TemperatureQueue = mp.Queue()
         StatusQueue = mp.Queue()
         MovementQueue = mp.Queue()
-        myEnv = Environment(phase_cycle_in_sec=PHASE_LENGTH, 
-                    TemperatureQueue=TemperatureQueue,
-                    StatusQueue=StatusQueue, MovementQueue=MovementQueue)
-        myEnv.start()
-        myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
+        myRiceCooker = RiceCookerController(phase_cycle_in_sec=PHASE_LENGTH, 
+                        StatusQueue=StatusQueue, MovementQueue=MovementQueue)
+        myRiceCooker.start()
+        myTemperatureProvider = TemperatureProvider(phase_cycle_in_sec=PHASE_LENGTH,
+                        TemperatureQueue=TemperatureQueue)
+        myTemperatureProvider.start()
+        myAgent = Agent(kP=1, kI=0.01, kD=100, target_temp=65, 
                         target_duration=60, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="works20res11_fix", length=5)    
+                        label="3q", length=5)    
         myAgent.start()
-        # myEnv.join()
-        # myAgent.join()
+        myRiceCooker.join()
+        myTemperatureProvider.join()
+        myAgent.join()
     except:
         logging.error("Exception occured", exc_info=True)
 

@@ -12,14 +12,36 @@ from w1thermsensor import W1ThermSensor, Sensor
 from config import *
 
 
-class Environment(multiprocessing.Process):
-    def __init__(self, phase_cycle_in_sec, TemperatureQueue, StatusQueue, 
-                MovementQueue):
+class TemperatureProvider(multiprocessing.Process):
+    def __init__(self, phase_cycle_in_sec, TemperatureQueue):
         multiprocessing.Process.__init__(self, group=None, 
-            name="Environment_Process")
+            name="Temperature Provider")
         self._logger = logging.getLogger(type(self).__name__)
         os.system('modprobe w1-gpio')
         os.system('modprobe w1-therm')
+        self.phase_cycle_in_sec = phase_cycle_in_sec
+        self.sensor = W1ThermSensor(Sensor.DS18B20, SENSORADDRESS)
+        self.sensor.set_resolution(resolution=11, persist=False)
+        self.temperature = self.get_temperature()
+        self.TemperatureQueue = TemperatureQueue
+        self.is_over = False
+        self.last_timestamp = None
+
+    def get_temperature(self):
+        self.temperature = self.sensor.get_temperature()
+        return self.temperature
+
+    def run(self):
+        while not self.is_over:
+            self.temperature = self.get_temperature()
+            self.TemperatureQueue.put(self.temperature)
+            time.sleep(self.phase_cycle_in_sec)
+
+class RiceCookerController(multiprocessing.Process):
+    def __init__(self, phase_cycle_in_sec, StatusQueue, MovementQueue):
+        multiprocessing.Process.__init__(self, group=None, 
+            name="RiceCooker Process")
+        self._logger = logging.getLogger(type(self).__name__)
         self.phase_cycle_in_sec = phase_cycle_in_sec
         self.is_over = False
         self.SousVide_ip = SousVide_ip
@@ -27,12 +49,7 @@ class Environment(multiprocessing.Process):
         self.TUYA_KEYID = TUYA_KEYID
         self.tuya_properties = self.generate_tuya_properties()
         self.switch_status = self.get_tuya_status()
-        self.reset_tuya_switch()
-        assert not self.switch_status
-        self.sensor = W1ThermSensor(Sensor.DS18B20, SENSORADDRESS)
-        self.sensor.set_resolution(resolution=11, persist=False)
-        self.temperature = self.get_temperature()
-        self.TemperatureQueue = TemperatureQueue
+        self.tuya_off()
         self.StatusQueue = StatusQueue
         self.MovementQueue = MovementQueue
 
@@ -43,18 +60,11 @@ class Environment(multiprocessing.Process):
         #my_tuya.set_socketPersistent(True)
         return my_tuya
 
-    def reset_tuya_switch(self):
-        self.tuya_off()
-
     def get_tuya_status(self):
         self.tuya_properties = self.generate_tuya_properties()
         data = self.tuya_properties.status()
         data = data["dps"]["1"]
         return data
-        
-    def get_temperature(self):
-        self.temperature = self.sensor.get_temperature()
-        return self.temperature
 
     def shutdown(self):
         self.is_over = True
@@ -63,15 +73,13 @@ class Environment(multiprocessing.Process):
     def tuya_off(self):
         if self.switch_status:
             self.tuya_properties.set_status(False, 1)
-            # self.tuya_properties.turn_off(switch=1)
             self.switch_status = False
         else:
             pass
 
     def tuya_on(self):
         if not self.switch_status:
-            #self.tuya_properties.set_status(True, 1)
-            self.tuya_properties.turn_on(switch=1)
+            self.tuya_properties.set_status(True, 1)
             self.switch_status = True
         else:
             pass
@@ -96,8 +104,6 @@ class Environment(multiprocessing.Process):
 
     def run(self):
         while not self.is_over:
-            self.temperature = self.get_temperature()
-            self.TemperatureQueue.put(self.temperature)
             while not self.MovementQueue.empty():
                 movement = self.MovementQueue.get()
                 self.apply_step(movement)
