@@ -8,7 +8,7 @@ def display(zoom=False):
     files = glob.glob("logs/*")
     for file in files:
         #if "Cycles.1" in file and "Temp.65" in file:
-        if "tuning_with_P_only_0.4v2" in file:
+        if "Tuning01_P005_I3_D0_" in file:
             data = pd.read_csv(file)
             print(np.max(data['current_temp']))
             data.replace("False", "0", inplace=True)

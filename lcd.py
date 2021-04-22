@@ -11,8 +11,8 @@ from config import PHASE_LENGTH
 
 if __name__ == "__main__":
     try:
-        # logging.basicConfig(format="%(asctime)s %(name)s \
-        #     %(levelname)s %(message)s", level = logging.DEBUG)
+        logging.basicConfig(format="%(asctime)s %(name)s \
+            %(levelname)s %(message)s", level = logging.CRITICAL)
         mp.log_to_stderr(logging.DEBUG)
         TemperatureQueue = mp.Queue()
         StatusQueue = mp.Queue()
@@ -21,12 +21,12 @@ if __name__ == "__main__":
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue)
         myRiceCooker.start()
         myTemperatureProvider = TemperatureProvider(phase_cycle_in_sec=PHASE_LENGTH,
-                        TemperatureQueue=TemperatureQueue)
+                        Resolution=12, TemperatureQueue=TemperatureQueue)
         myTemperatureProvider.start()
-        myAgent = Agent(kP=0.4, kI=0, kD=0, target_temp=65, 
+        myAgent = Agent(kP=0.05, kI=3, kD=0, target_temp=65, 
                         target_duration=180, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="tuning_with_P_only_0.4v2")    
+                        label="Tuning01_P005_I3_D0_2")    
         myAgent.start()
         myRiceCooker.join()
         myTemperatureProvider.join()

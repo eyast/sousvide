@@ -10,7 +10,7 @@ from config import *
 
 
 class TemperatureProvider(multiprocessing.Process):
-    def __init__(self, phase_cycle_in_sec, TemperatureQueue):
+    def __init__(self, phase_cycle_in_sec, Resolution, TemperatureQueue):
         multiprocessing.Process.__init__(self, group=None, 
             name="Temperature Provider")
         self._logger = logging.getLogger(type(self).__name__)
@@ -19,8 +19,10 @@ class TemperatureProvider(multiprocessing.Process):
         os.system('modprobe w1-therm')
         self.phase_cycle_in_sec = phase_cycle_in_sec
         self.sensor = W1ThermSensor(Sensor.DS18B20, SENSORADDRESS)
-        self.sensor.set_resolution(resolution=12, persist=False)
+        self.Resolution = Resolution
+        self.sensor.set_resolution(resolution=self.Resolution, persist=False)
         self.temperature = self.get_temperature()
+        self.last_known_temperature = 15
         self.TemperatureQueue = TemperatureQueue
         self.is_over = False
         self.last_timestamp = None
@@ -29,7 +31,14 @@ class TemperatureProvider(multiprocessing.Process):
         pass
 
     def get_temperature(self):
-        self.temperature = self.sensor.get_temperature()
+        try:
+            self.temperature = self.sensor.get_temperature()
+        except:
+            self.temperature = self.last_known_temperature
+            self._logger.critical("Could not read temperature sensor")
+            time.sleep(0.1)
+        finally:
+            self.last_known_temperature = self.temperature
         if self.temperature >= self.safety_max_temperature:
             self.shutdown()
         self._logger.debug(f"Value - self.temperature: {self.temperature}")
