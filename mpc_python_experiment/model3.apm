@@ -1,0 +1,61 @@
+Objects
+  mpc = lti
+End Objects
+
+Connections
+  x = mpc.x[1]
+  y = mpc.y[1]
+  u = mpc.u[1]
+End Connections
+
+Parameters
+  u
+End Parameters
+
+Variables
+  x
+  y
+End Variables
+
+ ! Model information
+ ! continuous form
+ ! dx/dt = A * x + B * u
+ !     y = C * x + D * u
+ !
+ ! dimensions
+ ! (nx1) = (nxn)*(nx1) + (nxm)*(mx1)
+ ! (px1) = (pxn)*(nx1) + (pxm)*(mx1)
+ !
+ ! discrete form
+ ! x[k+1] = A * x[k] + B * u[k]
+ !   y[k] = C * x[k] + D * u[k]
+ 
+ !   5 * $x = -x + 1.5 * u
+ !   y = x
+
+ File mpc.txt
+   sparse, discrete  ! dense/sparse, continuous/discrete
+   1      ! m=number of inputs
+   1      ! n=number of states
+   1      ! p=number of outputs
+ End File
+
+ ! A matrix (row, column, value)
+ File mpc.a.txt
+   1  1  0.9048
+ End File
+
+ ! B matrix (row, column, value)
+ File mpc.b.txt
+   1  1  0.1428
+ End File
+
+ ! C matrix (row, column, value)
+ File mpc.c.txt
+   1  1  1.0
+ End File
+
+ ! D matrix (row, column, value)
+ File mpc.d.txt
+   1  1  0.0
+ End File
