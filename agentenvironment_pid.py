@@ -63,11 +63,12 @@ class TemperatureProvider(multiprocessing.Process):
 
 
 class RiceCookerController(multiprocessing.Process):
-    def __init__(self, phase_cycle_in_sec, StatusQueue, MovementQueue):
+    def __init__(self, phase_cycle_in_sec, split, StatusQueue, MovementQueue):
         multiprocessing.Process.__init__(self, group=None, 
             name="RiceCooker Process")
         self._logger = logging.getLogger(type(self).__name__)
         self.phase_cycle_in_sec = phase_cycle_in_sec
+        self.split = split
         self.is_over = False
         self.SousVide_ip = SousVide_ip
         self.TUYA_GWID = TUYA_GWID
@@ -110,6 +111,12 @@ class RiceCookerController(multiprocessing.Process):
         assert (duration >= 0) or \
                 (duration <= self.phase_cycle_in_sec)
         assert not self.is_over
+        if self.split:
+            midpoint = self.phase_cycle_in_sec / 2
+            if duration >= midpoint:
+                duration = self.phase_cycle_in_sec
+            else:
+                duration = 0
         if duration == 0:
             self.tuya_off()
             time.sleep(self.phase_cycle_in_sec)

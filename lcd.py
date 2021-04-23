@@ -18,15 +18,16 @@ if __name__ == "__main__":
         StatusQueue = mp.Queue()
         MovementQueue = mp.Queue()
         myRiceCooker = RiceCookerController(phase_cycle_in_sec=PHASE_LENGTH, 
-                        StatusQueue=StatusQueue, MovementQueue=MovementQueue)
+                        split=True, StatusQueue=StatusQueue, 
+                        MovementQueue=MovementQueue)
         myRiceCooker.start()
         myTemperatureProvider = TemperatureProvider(phase_cycle_in_sec=PHASE_LENGTH,
-                        Resolution=12, TemperatureQueue=TemperatureQueue)
+                        Resolution=11, TemperatureQueue=TemperatureQueue)
         myTemperatureProvider.start()
-        myAgent = Agent(kP=0.05, kI=3, kD=0, target_temp=65, 
+        myAgent = Agent(kP=1.1, kI=0.05, kD=37, target_temp=58, 
                         target_duration=180, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="Tuning01_P005_I3_D0_2")    
+                        label="Fillet_Mignon_")
         myAgent.start()
         myRiceCooker.join()
         myTemperatureProvider.join()
