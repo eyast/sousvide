@@ -24,10 +24,10 @@ if __name__ == "__main__":
         myTemperatureProvider = TemperatureProvider(phase_cycle_in_sec=PHASE_LENGTH,
                         Resolution=11, TemperatureQueue=TemperatureQueue)
         myTemperatureProvider.start()
-        myAgent = Agent(kP=1.1, kI=0.05, kD=37, target_temp=58, 
+        myAgent = Agent(kP=1.1, kI=0.01, kD=100, target_temp=56, 
                         target_duration=180, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="Fillet_Mignon_")
+                        label="Fillet_Mignon_2c_")
         myAgent.start()
         myRiceCooker.join()
         myTemperatureProvider.join()
