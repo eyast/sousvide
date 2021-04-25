@@ -165,12 +165,13 @@ class Buzzer(multiprocessing.Process):
 
 class Agent(multiprocessing.Process):
     def __init__(self, kP, kI, kD, target_temp, target_duration, 
-                TemperatureQueue, StatusQueue, MovementQueue, label):
+                TemperatureQueue, StatusQueue, MovementQueue, label,
+                reset_counter=125):
         multiprocessing.Process.__init__(self, group=None,
             name="Agent_Process")
         self._logger = logging.getLogger(type(self).__name__)
-        # time.sleep(1)
         self.stepcount = 0
+        self.reset_counter = reset_counter
         self.target_temp = target_temp
         self.target_duration = target_duration
         self.kP = kP
@@ -191,11 +192,8 @@ class Agent(multiprocessing.Process):
         self.TemperatureQueue = TemperatureQueue
         self.StatusQueue = StatusQueue
         self.MovementQueue = MovementQueue
-        # time.sleep(2)
         self.input = self.TemperatureQueue.get()
         self.movement = 0
-        # self.buzzer_reached_temp = Buzzer(duration=0.5, time=4)
-        # self.buzzer_time_out = Buzzer(duration=1, time=6)
 
     def update_error(self):
         current_error = self.target_temp - self.input
@@ -260,6 +258,11 @@ class Agent(multiprocessing.Process):
             self.log_to_file()
             self.last_input = self.input
             self.stepcount += 1
+            if self.stepcount % self.reset_counter == 0:
+                self.Pval = 0
+                self.Ival = 0
+                self.Dval = 0
+                self._logger.debug("PID gains reset")
             if not self.reached_target_temp:
                 if self.input >= self.target_temp:
                     self.reached_target_temp = True
