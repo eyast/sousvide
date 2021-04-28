@@ -259,9 +259,9 @@ class Agent(multiprocessing.Process):
             self.last_input = self.input
             self.stepcount += 1
             if self.stepcount % self.reset_counter == 0:
-                self.Pval = 0
-                self.Ival = 0
-                self.Dval = 0
+                # self.Pval = 0
+                # self.Ival = 0
+                # self.Dval = 0
                 self._logger.debug("PID gains reset")
             if not self.reached_target_temp:
                 if self.input >= self.target_temp:
