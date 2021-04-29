@@ -24,10 +24,10 @@ if __name__ == "__main__":
         myTemperatureProvider = TemperatureProvider(phase_cycle_in_sec=PHASE_LENGTH,
                         Resolution=12, TemperatureQueue=TemperatureQueue)
         myTemperatureProvider.start()
-        myAgent = Agent(kP=0.02, kI=1, kD=0, target_temp=65, 
-                        target_duration=180, TemperatureQueue=TemperatureQueue,
+        myAgent = Agent(kP=1.075, kI=0.01, kD=80, target_temp=54, 
+                        target_duration=300, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="Tuning_Khadidja_P002_I1_a_")
+                        label="Fillet_Mignon_Amazon_b_")
         myAgent.start()
         myRiceCooker.join()
         myTemperatureProvider.join()

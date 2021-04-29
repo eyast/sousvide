@@ -194,6 +194,7 @@ class Agent(multiprocessing.Process):
         self.MovementQueue = MovementQueue
         self.input = self.TemperatureQueue.get()
         self.movement = 0
+        #self.buzzer_time_reached = Buzzer(1, 4)
 
     def update_error(self):
         current_error = self.target_temp - self.input
