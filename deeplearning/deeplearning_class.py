@@ -53,9 +53,7 @@ class SousVideDataset(Dataset):
         self.target = data_matrix[:,-1]
         self.target = np.reshape(self.target, (-1, 1))
         self.target = self.ss.fit_transform(self.target)
-        self.target = torch.from_numpy(self.target)
-
-        
+        self.target = torch.from_numpy(self.target)      
 
     def _width(self):
         return self.data.shape[1]
@@ -78,19 +76,23 @@ class SousVideDataset(Dataset):
 class MyLSTM(nn.Module):
     def __init__(self, num_classes, input_size, hidden_size, num_layers, seq_length):
         super (MyLSTM, self).__init__()
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.num_classes = num_classes
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.seq_length = seq_length
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first = True)
-        self.fc_1 = nn.Linear(hidden_size, 128) 
-        self.fc = nn.Linear(128, num_classes)
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first = True).to(self.device)
+        self.fc_1 = nn.Linear(hidden_size, 128).to(self.device)
+        self.fc = nn.Linear(128, num_classes).to(self.device)
         self.relu = nn.ReLU()
+        
+        print(self.device)
+        self.to(self.device)
 
     def forward(self, x):
-        h_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size))
-        c_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size))
+        h_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size)).to(self.device)
+        c_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size)).to(self.device)
         output, (hn, cn) = self.lstm(x, (h_0, c_0))
         hn = hn.view(-1, self.hidden_size)
         out = self.relu(hn)
@@ -111,6 +113,8 @@ def train(model, dataloader, loss_fn=None, epochs=None, optimizer=None):
     for epoch in range(epochs):
         for data in dataloader:
             x, y = data
+            x = x.to(model.device)
+            y = y.to(model.device)
             optimizer.zero_grad()
             out = model(x)
             loss = loss_fn(out, y)
