@@ -14,7 +14,7 @@ class SousVideDataset(Dataset):
     Pytorch dataset class that takes a sous vide CSV as an instance
     '''
 
-    def __init__(self, path=None, transform=None, recurse = False, target_distance=20):
+    def __init__(self, path=None, transform=None, recurse = False, target_distance=20, testing=False, MAVALUE=15):
         self.transform = transform
         if not path and recurse == False:
             folder = "../logs/fillet"
@@ -27,6 +27,8 @@ class SousVideDataset(Dataset):
             list_of_files = []
             for dirpath, dirname, files in os.walk(folder):
                 for name in files:
+                    if name == "Fillet_Mignon_2a__KP.1.1_KI.0.01_KD.100_Cycles.1_TargetTemp.56_.csv":
+                        continue
                     if name.lower().endswith(ext):
                         list_of_files.append(os.path.join(folder, dirpath, name))
             for i, file in enumerate(list_of_files):
@@ -38,22 +40,33 @@ class SousVideDataset(Dataset):
         else:
             self.path = path
             self.data = pd.read_csv(self.path)
+        if testing:
+            self.data = pd.read_csv("../logs/fillet2/Fillet_Mignon_2a__KP.1.1_KI.0.01_KD.100_Cycles.1_TargetTemp.56_.csv")
         self.data.drop(["actiontime", "Pval", "Ival", "Dval", "movement", "target_temp", "stepcount"],
                         axis=1, inplace=True)
         self.data_diff = self.data.copy()
+        self.data_diff["SMA"] = self.data_diff["current_temp"].ewm(span= MAVALUE).mean()
         self.data_diff["target"] = self.data_diff["current_temp"].shift(-target_distance)
         self.data_diff.dropna(inplace=True)
-        self.ss = StandardScaler()
+        self.data_diff = self.data_diff[['outcome', 'current_temp', 'SMA', 'target']]
         data_matrix = self.data_diff.values
-        data_matrix - data_matrix.astype(np.float)
-        data_matrix = torch.from_numpy(data_matrix)
+        data_matrix = data_matrix.astype(np.float)
+        self.data = StandardScaler().fit_transform(data_matrix)
         self.data = data_matrix[:,:-1]
-        self.data = self.ss.fit_transform(self.data)
+        print(self.data.shape)
         self.data = torch.from_numpy(self.data)
         self.target = data_matrix[:,-1]
+        print(self.target.shape)
         self.target = np.reshape(self.target, (-1, 1))
-        self.target = self.ss.fit_transform(self.target)
-        self.target = torch.from_numpy(self.target)      
+        print(self.target.shape)
+        self.target = torch.from_numpy(self.target)
+
+    def scale(self, x):
+        x = np.reshape(x, (-1, 1))
+        self.ss = StandardScaler()
+        x = self.ss.fit_transform(x)
+        x = np.reshape(x, (-1, 1))
+        return x
 
     def _width(self):
         return self.data.shape[1]
@@ -85,6 +98,7 @@ class MyLSTM(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first = True).to(self.device)
         self.fc_1 = nn.Linear(hidden_size, 128).to(self.device)
         self.fc = nn.Linear(128, num_classes).to(self.device)
+        self.drop = nn.Dropout(0.2, inplace=True)
         self.relu = nn.ReLU()
         
         print(self.device)
@@ -99,17 +113,15 @@ class MyLSTM(nn.Module):
         out = self.fc_1(out)
         out = self.relu(out)
         out = self.fc(out)
+        out = self.drop(out)
         return out
 
 
-def train(model, dataloader, loss_fn=None, epochs=None, optimizer=None):
-    if not loss_fn:
-        loss_fn = nn.L1Loss()
-    if not epochs:
-        epochs= 1000
+def train(model, dataloader, validation_dataloader=False, loss_fn=nn.L1Loss(), epochs=100, optimizer=None):
     if not optimizer:
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     train_loss = 0
+    vall_loss = 0
     for epoch in range(epochs):
         for data in dataloader:
             x, y = data
@@ -121,6 +133,17 @@ def train(model, dataloader, loss_fn=None, epochs=None, optimizer=None):
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
-        print(f"epoch: {epoch}, loss: {train_loss / 100}")
+        if validation_dataloader:
+            for x_val, y_val in validation_dataloader:
+                x_val = x_val.to(model.device)
+                y_val = y_val.to(model.device)
+                out_val = model(x_val)
+                minibatch_loss = loss_fn(out_val, y_val)
+                vall_loss += minibatch_loss.item()
+        if not validation_dataloader:
+            print(f"epoch: {epoch}, loss: {train_loss / 100}")
+        else:
+            print(f"epoch: {epoch}, training loss: {train_loss / 100}, validation loss = {vall_loss/ 100}")
         train_loss = 0
+        val_loss = 0
 
