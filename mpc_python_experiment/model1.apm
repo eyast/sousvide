@@ -1,0 +1,8 @@
+Parameters
+  u
+Variables
+  x
+  y
+Equations
+  5 * $x = -x + 1.5 * u
+  y = x

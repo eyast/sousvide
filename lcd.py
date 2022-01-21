@@ -1,6 +1,6 @@
 import multiprocessing as mp
 import logging
-from agentenvironment_pid import Environment, Agent
+from agentenvironment_pid import RiceCookerController, Agent, TemperatureProvider
 from config import PHASE_LENGTH
 
 
@@ -11,25 +11,34 @@ from config import PHASE_LENGTH
 
 if __name__ == "__main__":
     try:
+        logging.basicConfig(format="%(asctime)s %(name)s \
+            %(levelname)s %(message)s", level = logging.CRITICAL)
         mp.log_to_stderr(logging.DEBUG)
         TemperatureQueue = mp.Queue()
         StatusQueue = mp.Queue()
         MovementQueue = mp.Queue()
-        myEnv = Environment(phase_cycle_in_sec=PHASE_LENGTH, 
-                    TemperatureQueue=TemperatureQueue,
-                    StatusQueue=StatusQueue, MovementQueue=MovementQueue)
-        myEnv.start()
-        myAgent = Agent(kP=1, kI=0.01, kD=50, target_temp=60, 
-                        target_duration=60, TemperatureQueue=TemperatureQueue,
+        myRiceCooker = RiceCookerController(phase_cycle_in_sec=PHASE_LENGTH, 
+                        split=True, StatusQueue=StatusQueue, 
+                        MovementQueue=MovementQueue)
+        myRiceCooker.start()
+        myTemperatureProvider = TemperatureProvider(phase_cycle_in_sec=PHASE_LENGTH,
+                        Resolution=12, TemperatureQueue=TemperatureQueue)
+        myTemperatureProvider.start()
+        myAgent = Agent(kP=1.075, kI=0.01, kD=80, target_temp=54, 
+                        target_duration=300, TemperatureQueue=TemperatureQueue,
                         StatusQueue=StatusQueue, MovementQueue=MovementQueue, 
-                        label="works20res11_fix", length=5)    
+                        label="Fillet_Mignon_Amazon_b_")
         myAgent.start()
-        # myEnv.join()
-        # myAgent.join()
+        myRiceCooker.join()
+        myTemperatureProvider.join()
+        myAgent.join()
     except:
         logging.error("Exception occured", exc_info=True)
 
 # TODO
+# develop the function self.shutdown() in each of the classes
+# Check if there's any scikit learn or scipy for PID ?
+# Develop the shutdown function in the Agent
 # use the property decorator to make the code better
 # Learn how to use the Logger
 # Experiment reducing the cycle length to 1 second - better results?
