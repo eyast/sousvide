@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 from torch.utils.data import Dataset
-import time
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 
 class SousVideDataset(Dataset):
@@ -14,33 +14,51 @@ class SousVideDataset(Dataset):
     Pytorch dataset class that takes a sous vide CSV as an instance
     '''
 
-    def __init__(self, path=None, transform=None, window_size=20):
-        self.window_size = window_size
+    def __init__(self, path=None, transform=None, recurse = False, target_distance=20):
         self.transform = transform
-        if not path:
+        if not path and recurse == False:
             folder = "../logs/fillet"
             file = (os.listdir(folder)[0])
             self.path = folder + "/" + file
+            self.data = pd.read_csv(self.path)
+        elif not path and recurse == True:
+            folder = "../logs/"
+            ext = ".csv"
+            list_of_files = []
+            for dirpath, dirname, files in os.walk(folder):
+                for name in files:
+                    if name.lower().endswith(ext):
+                        list_of_files.append(os.path.join(folder, dirpath, name))
+            for i, file in enumerate(list_of_files):
+                if i == 0:
+                    self.data = pd.read_csv(file)
+                else:
+                    temp_df = pd.read_csv(file,)
+                    self.data = self.data.append(temp_df)
         else:
             self.path = path
-        self.data = pd.read_csv(self.path, index_col=0)
-        self.data.drop(["actiontime", "Pval", "Ival", "Dval", "movement", "target_temp"],
+            self.data = pd.read_csv(self.path)
+        self.data.drop(["actiontime", "Pval", "Ival", "Dval", "movement", "target_temp", "stepcount"],
                         axis=1, inplace=True)
         self.data_diff = self.data.copy()
-        for i in range(window_size):
-            temperature_title = f"t_{i + 1}"
-            command_title = f"c_{i +1}"
-            self.data_diff[temperature_title] = self.data_diff["current_temp"].shift(i)
-            self.data_diff[command_title] = self.data_diff["outcome"].shift(i)  
-        self.data_diff["target"] = self.data_diff["current_temp"].shift(window_size)
+        self.data_diff["target"] = self.data_diff["current_temp"].shift(-target_distance)
         self.data_diff.dropna(inplace=True)
-        #self.target = self.data_diff[["target"]]
-        #self.data_diff.drop("target", axis=1, inplace=True)
+        self.ss = StandardScaler()
         data_matrix = self.data_diff.values
         data_matrix - data_matrix.astype(np.float)
         data_matrix = torch.from_numpy(data_matrix)
         self.data = data_matrix[:,:-1]
+        self.data = self.ss.fit_transform(self.data)
+        self.data = torch.from_numpy(self.data)
         self.target = data_matrix[:,-1]
+        self.target = np.reshape(self.target, (-1, 1))
+        self.target = self.ss.fit_transform(self.target)
+        self.target = torch.from_numpy(self.target)
+
+        
+
+    def _width(self):
+        return self.data.shape[1]
 
     def __len__(self):
         return (self.data_diff.shape)[0]
@@ -48,20 +66,13 @@ class SousVideDataset(Dataset):
     def __getitem__(self, index):
         if torch.is_tensor(index):
             index = index.tolist()
-
         data = self.data[index]
-
-        
         target = self.target[index]
         if self.transform:
-            #print(index, data.shape, data)
-            #data = torch.reshape(data, (data.shape[0], 1, data.shape[1]))
             data = data.unsqueeze(dim=0)
-            data = data.float()
+            data = data.float()           
             target = target.unsqueeze(dim=0)
-            target = target.float()
-            #target = torch.reshape(target, (target.shape[0], 1, target.shape[1]))
-
+            target = target.float()     
         return data, target
 
 class MyLSTM(nn.Module):
@@ -93,9 +104,9 @@ def train(model, dataloader, loss_fn=None, epochs=None, optimizer=None):
     if not loss_fn:
         loss_fn = nn.L1Loss()
     if not epochs:
-        epochs= 100
+        epochs= 1000
     if not optimizer:
-        optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     train_loss = 0
     for epoch in range(epochs):
         for data in dataloader:
